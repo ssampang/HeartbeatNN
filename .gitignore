@@ -1,0 +1,8 @@
+*.pkl
+*.pyc
+preprocessing/waveforms/*
+preprocessing/annotations/*
+preprocessing/backups/*
+preprocessing/wfdb-10.5.24/*
+*.png
+*.tar.gz
