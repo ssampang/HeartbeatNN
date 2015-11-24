@@ -7,7 +7,6 @@ momentum = 0.5
 trainingFileName = 'BinaryTrain.pkl'
 valFileName = 'BinaryVal.pkl'
 
-
 def loadData(filename):
 	f = open(filename)
 	return cPickle.load(f)

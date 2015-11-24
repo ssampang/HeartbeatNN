@@ -3,9 +3,9 @@ import lasagne, theano, theano.tensor as T
 
 batch_size=256
 learning_rate = 0.01
-momentum = 0.5
-trainingFileName = 'BinaryTrain.pkl'
-valFileName = 'BinaryVal.pkl'
+momentum = 0.9
+trainingFileName = 'BinaryTrain5050.pkl'
+valFileName = 'BinaryVal5050.pkl'
 
 
 def loadData(filename):
@@ -41,24 +41,25 @@ def addLayer(network,layer,name):
 
 def build_lstm(input_var=None):
 	network = {}
-	addLayer(network, lasagne.layers.InputLayer(shape=(None,1,2,361), input_var = input_var), 'Input')
-	addLayer(network, lasagne.layers.Conv2DLayer(network['Input'],num_filters=50,filter_size=(1,30)), 'Conv1')
-	addLayer(network, lasagne.layers.MaxPool2DLayer(network['Conv1'], pool_size=(1,5)), 'MaxPool1')
-	addLayer(network, lasagne.layers.DenseLayer(lasagne.layers.dropout(network['MaxPool1'], p=0.2), num_units=100), 'FC1')
+	addLayer(network, lasagne.layers.InputLayer(shape=(None,1,361,2), input_var = input_var), 'Input')
+	#addLayer(network, lasagne.layers.Conv2DLayer(network['Input'],num_filters=50,filter_size=(1,30)), 'Conv1')
+	addLayer(network, lasagne.layers.LSTMLayer(network['Input'],30), 'LSTM1')
+	addLayer(network, lasagne.layers.SliceLayer(network['LSTM1'],-1,1), 'Slice')
+	addLayer(network, lasagne.layers.DenseLayer(lasagne.layers.dropout(network['Slice'], p=0.5), num_units=100), 'FC1')
 	addLayer(network, lasagne.layers.DenseLayer(network['FC1'],num_units=1,nonlinearity = lasagne.nonlinearities.sigmoid),'Sigmoid')
-	return (network, network['Sigmoid'], [network['Conv1'], network['FC1']])
+	return (network, network['Sigmoid'], [network['FC1']])
 
-def modify_cnn(network):
+def modify_lstm(network):
 	addLayer(network, lasagne.layers.DenseLayer(lasagne.layers.dropout(network['FC1'], p=0.2), num_units=300), 'FC2')
 	addLayer(network, lasagne.layers.DenseLayer(network['FC2'],num_units=1,nonlinearity = lasagne.nonlinearities.sigmoid),'Sigmoid')
-	return (network, network['Sigmoid'], [network['Conv1'], network['FC1'], network['FC2']])
+	return (network, [network['Conv1'], network['FC1'], network['FC2']])
 	
 def setupFunctions(outputLayer, regLayers, input_var, target_var):
 	prediction = lasagne.layers.get_output(outputLayer)
 	loss = lasagne.objectives.binary_crossentropy(prediction,target_var)
 	loss = loss.mean()
-	reg = lasagne.regularization.regularize_layer_params(regLayers, lasagne.regularization.l2)
-	loss = loss + reg
+	#reg = lasagne.regularization.regularize_layer_params(regLayers, lasagne.regularization.l2)
+	#loss = loss + reg
 
 	params = lasagne.layers.get_all_params(outputLayer, trainable=True)
 	updates = lasagne.updates.nesterov_momentum(loss,params, learning_rate = learning_rate, momentum=momentum)
@@ -118,6 +119,8 @@ def train(numEpochs, outputLayer):
 print('Loading data...')
 X_train, y_train = loadData(trainingFileName)
 X_val, y_val = loadData(valFileName)
+X_train = np.swapaxes(X_train,2,3)
+X_val = np.swapaxes(X_val,2,3)
 train_fn,val_fn = [],[]
 print('Done loading data')
 
@@ -126,7 +129,7 @@ def main(numEpochs=-1):
 	input_var = T.tensor4('inputs')
 	target_var = T.imatrix('targets')
 	
-	network, outputLayer, regLayers = build_cnn(input_var)
+	network, outputLayer, regLayers = build_lstm(input_var)
 	#params = load_network('networkFC1-1934.pkl')
 	#lasagne.layers.set_all_param_values(outputLayer,params)
 	#network, outputLayer, regLayers = modify_cnn(network)

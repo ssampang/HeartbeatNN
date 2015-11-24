@@ -4,8 +4,8 @@ import lasagne, theano, theano.tensor as T
 batch_size=256
 learning_rate = 0.01
 momentum = 0.9
-trainingFileName = 'BinaryTrain5050.pkl'
-valFileName = 'BinaryVal5050.pkl'
+trainingFileName = 'AllLabelsTrain5050.pkl'
+valFileName = 'AllLabelsVal5050.pkl'
 
 
 def loadData(filename):
@@ -46,17 +46,17 @@ def build_cnn(input_var=None):
 	addLayer(network, lasagne.layers.MaxPool2DLayer(network['Conv1'], pool_size=(1,5)), 'MaxPool1')
 	addLayer(network, lasagne.layers.DenseLayer(lasagne.layers.dropout(network['MaxPool1'], p=0.5), num_units=50), 'FC1')
 	addLayer(network, lasagne.layers.DenseLayer(lasagne.layers.dropout(network['FC1'], p=0.5), num_units=50), 'FC2')
-	addLayer(network, lasagne.layers.DenseLayer(network['FC2'],num_units=1,nonlinearity = lasagne.nonlinearities.sigmoid),'Sigmoid')
-	return (network, network['Sigmoid'], [network['Conv1'], network['FC1'], network['FC2']])
+	addLayer(network, lasagne.layers.DenseLayer(network['FC2'],num_units=14,nonlinearity = lasagne.nonlinearities.softmax),'Softmax')
+	return (network, network['Softmax'], [network['Conv1'], network['FC1'], network['FC2']])
 
 def modify_cnn(network):
 	addLayer(network, lasagne.layers.DenseLayer(lasagne.layers.dropout(network['FC1'], p=0.5), num_units=100), 'FC2')
-	addLayer(network, lasagne.layers.DenseLayer(network['FC2'],num_units=1,nonlinearity = lasagne.nonlinearities.sigmoid),'Sigmoid')
-	return (network, network['Sigmoid'], [network['Conv1'], network['FC1'], network['FC2']])
+	addLayer(network, lasagne.layers.DenseLayer(network['FC2'],num_units=14,nonlinearity = lasagne.nonlinearities.softmax),'Softmax')
+	return (network, network['Softmax'], [network['Conv1'], network['FC1'], network['FC2']])
 	
 def setupFunctions(outputLayer, regLayers, input_var, target_var):
 	prediction = lasagne.layers.get_output(outputLayer)
-	loss = lasagne.objectives.binary_crossentropy(prediction,target_var)
+	loss = lasagne.objectives.categorical_crossentropy(prediction,target_var)
 	loss = loss.mean()
 	#reg = lasagne.regularization.regularize_layer_params(regLayers, lasagne.regularization.l2)
 	#loss = loss + reg
@@ -66,55 +66,55 @@ def setupFunctions(outputLayer, regLayers, input_var, target_var):
 
 	#only useful if I eventually use dropout
 	test_prediction = lasagne.layers.get_output(outputLayer, deterministic=True)
-	test_loss = lasagne.objectives.binary_crossentropy(test_prediction,target_var)
+	test_loss = lasagne.objectives.categorical_crossentropy(test_prediction,target_var)
 	test_loss = test_loss.mean()
-	test_acc = T.mean(T.eq(T.gt(test_prediction,0.5),target_var),dtype=theano.config.floatX)
+	test_acc = T.mean(T.eq(T.argmax(test_prediction,axis=1),target_var),dtype=theano.config.floatX)
 
 	train_fn = theano.function([input_var,target_var],loss, updates=updates)
 	val_fn = theano.function([input_var,target_var],[test_loss,test_acc])
 	return train_fn, val_fn
 
 def train(numEpochs, outputLayer):
-	try:	
-		bestParams = []
-		best_val_acc = 0.0
-		total_val_batches = 0
-		best_epoch = 0
-		epoch = 1
-		runForever = False
-		if numEpochs == -1:
-			runForever = True
-		while(epoch < numEpochs or runForever):
-			train_err = 0
-			train_batches = 0
-			start_time = time.time()
-			for batch in iterate_minibatches(X_train,y_train,batch_size):
-				inputs,targets = batch
-				train_err += train_fn(inputs,targets)
-				train_batches += 1
+#	try:	
+	bestParams = []
+	best_val_acc = 0.0
+	total_val_batches = 0
+	best_epoch = 0
+	epoch = 1
+	runForever = False
+	if numEpochs == -1:
+		runForever = True
+	while(epoch < numEpochs or runForever):
+		train_err = 0
+		train_batches = 0
+		start_time = time.time()
+		for batch in iterate_minibatches(X_train,y_train,batch_size):
+			inputs,targets = batch
+			train_err += train_fn(inputs,targets)
+			train_batches += 1
 
-			val_err = 0
-			val_acc = 0
-			val_batches = 0
-			for batch in iterate_minibatches(X_val,y_val,min(batch_size,len(X_val))):
-				inputs,targets = batch
-				err,acc = val_fn(inputs,targets)
-				val_err += err
-				val_acc += acc
-				val_batches += 1
+		val_err = 0
+		val_acc = 0
+		val_batches = 0
+		for batch in iterate_minibatches(X_val,y_val,min(batch_size,len(X_val))):
+			inputs,targets = batch
+			err,acc = val_fn(inputs,targets)
+			val_err += err
+			val_acc += acc
+			val_batches += 1
 
-			print("Epoch {} of {} took {:.3f}s training loss: {:.6f}\t validation loss: {:.6f}\t validation accuracy: {:.2f} %".format(epoch + 1, numEpochs, time.time() - start_time, train_err / train_batches, val_err / val_batches, val_acc / val_batches * 100))
-			if val_acc > best_val_acc:
-				best_val_acc = val_acc
-				bestParams = lasagne.layers.get_all_param_values(outputLayer)
-				total_val_batches = val_batches
-				best_epoch = epoch
-			epoch += 1
-			if epoch % 1000 ==0:
-				save_network('network-'+str(epoch)+'.pkl',lasagne.layers.get_all_param_values(outputLayer))
-	finally:
-		print 'Saving network from epoch ' + str(best_epoch) + ' with validation accuracy '+str( best_val_acc / total_val_batches * 100)
-		save_network('network-'+str(best_epoch)+'.pkl',bestParams)
+		print("Epoch {} of {} took {:.3f}s training loss: {:.6f}\t validation loss: {:.6f}\t validation accuracy: {:.2f} %".format(epoch + 1, numEpochs, time.time() - start_time, train_err / train_batches, val_err / val_batches, val_acc / val_batches * 100))
+		if val_acc > best_val_acc:
+			best_val_acc = val_acc
+			bestParams = lasagne.layers.get_all_param_values(outputLayer)
+			total_val_batches = val_batches
+			best_epoch = epoch
+		epoch += 1
+		if epoch % 1000 ==0:
+			save_network('network-'+str(epoch)+'.pkl',lasagne.layers.get_all_param_values(outputLayer))
+	#finally:
+#		print 'Saving network from epoch ' + str(best_epoch) + ' with validation accuracy '+str( best_val_acc / total_val_batches * 100)
+#		save_network('network-'+str(best_epoch)+'.pkl',bestParams)
 
 print('Loading data...')
 X_train, y_train = loadData(trainingFileName)
