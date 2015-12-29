@@ -67,7 +67,7 @@ To define and extract a single heartbeat from a continuous ECG sequence, we deci
 
 A window size of 1 second led to nearly all examples containing 361 samples. 176 examples contained 360 samples, and to simplify their processing in the  networks, we simply duplicated the last sample to allow a uniform sample size for each heartbeat. Exactly 100 annotated heartbeats could not be used as examples because their R peaks are too close (within 0.5 seconds) to either the beginning of their respective sequence or the end.
 
-Starting with 110631 examples, we removed the 100 examples that did not contain the full 361 samples. We also removed the examples for which the annotation was neither 'normal' or some type of arrhythmia. Examples include paced heartbeats, ventricular flutter waves, unclassifiable heartbeats, and heartbeats that are a fusion of normal and paced or normal and ventricular. After removing these irrelevant examples, we had a set of 93521 examples, of which 18489 (19.7\%) are abnormal.
+Starting with 110631 examples, we removed the 100 examples that did not contain the full 361 samples. We also removed the examples for which the annotation was neither 'normal' or some type of arrhythmia. Examples include paced heartbeats, ventricular flutter waves, unclassifiable heartbeats, and heartbeats that are a fusion of normal and paced or normal and ventricular. After removing these irrelevant examples, we had a set of 93521 examples, of which 18489 (19.7\%) are indicative of arrhythmia.
 
 
 \section{Results}
