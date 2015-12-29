@@ -1,57 +1,58 @@
 import cPickle
 import random
 import numpy as np
+from math import floor
 
 f = open('../data.pkl')
 data = cPickle.load(f)
 f.close()
+beatsMissing1Sample = filter(lambda x: len(x[0])==360, data)
+for beat in beatsMissing1Sample:
+	beat[0].append(beat[0][-1])
 data = filter(lambda x: len(x[0])==361, data)
+data.extend(beatsMissing1Sample)
 normals = filter( lambda x: x[1][1]=='N', data)
 abnormals = filter( lambda x: x[1][1]!='N', data)
 del data
-remove = ['!','"','+','Q','[',']','x','|','~']
-labels = {'!': 472, '"': 437, '+': 1244, '/': 7028, 'A': 2546, 'E': 106, 'F': 803, 'J': 83, 'L': 8075, 'N': 75052, 'Q': 33, 'S': 2, 'R': 7259, 'V': 7130, '[': 6, ']': 6, 'a': 150, 'e': 16, 'f': 982, 'j': 229, 'x': 193, '|': 132, '~': 615}
-labels = labels.keys()
-labels = [x for x in labels if x not in remove]
-label = 0
+
+labels = ['A', 'E', 'J', 'L', 'N', 'R', 'a', 'e', 'j', 'S']
+labelNum = 0
 labelDict = {}
 for i in labels:
-	labelDict[i] = label
-	label += 1
+	labelDict[i] = labelNum
+	labelNum += 1
 
-abnormals = [x for x in abnormals if x[1][1] not in remove]
+abnormals = [x for x in abnormals if x[1][1] in labels]
 random.shuffle(normals)
 random.shuffle(abnormals)
-X_val = []
-y_val = []
-X_val.extend(normals[:len(normals)/2])
-X_val.extend(abnormals[:len(abnormals)/2])
-y_val = np.array([ labelDict[x[1][1]] for x in X_val], dtype='int32')
-del normals[:len(normals)/2]
-del abnormals[:len(abnormals)/2]
-X_val = np.array([ np.array([y[1:] for y in x[0]]).T for x in X_val],dtype='float32')
-X_val = np.expand_dims(X_val,1)
-y_val = np.array(y_val,dtype='int32')
-y_val = np.expand_dims(y_val,1)
+X_test = []
+y_test = []
+test_length = int(floor( len(abnormals)*0.2 ))
+X_test.extend(normals[-test_length:])
+X_test.extend(abnormals[-test_length:])
+y_test = np.array([ int(x[1][1]=='N') for x in X_test], dtype='int32')
+del normals[-test_length:]
+del abnormals[-test_length:]
+X_test = np.array([ np.array([y[1:] for y in x[0]]).T for x in X_test],dtype='float32')
+X_test = np.expand_dims(X_test,1)
+y_test = np.array(y_test,dtype='int32')
+y_test = np.expand_dims(y_test,1)
 
-moreCopies = ['S', 'e', 'J', 'E', 'a', 'j', 'F']
-training = []
-for el in abnormals:
-	if el[1][1] in moreCopies:
-		training.extend([el for i in range(7)])
-	else:
-		training.extend([el for i in range(2)])
-training.extend(normals)
-random.shuffle(training)
+train_length = len(abnormals) - test_length
+normals = normals[:train_length]
+abnormals = abnormals[:train_length]
+training = normals
+training.extend(abnormals)
+
 X_train = np.array([ np.array([y[1:] for y in x[0]]).T for x in training], dtype='float32')
 X_train = np.expand_dims(X_train,1)
-y_train = np.array([ labelDict[x[1][1]] for x in training], dtype='int32')
+y_train = np.array([ int(x[1][1]=='N') for x in training], dtype='int32')
 y_train = np.expand_dims(y_train,1)
 
-f = open('AllLabelsTrain5050.pkl', 'wb')
+f = open('BinaryTrain80.pkl', 'wb')
 cPickle.dump((X_train,y_train),f)
 f.close()
 
-f = open('AllLabelsVal5050.pkl','wb')
-cPickle.dump((X_val,y_val),f)
+f = open('BinaryTest20.pkl','wb')
+cPickle.dump((X_test,y_test),f)
 f.close()

@@ -59,6 +59,16 @@ A convolutional layer is specified by the number of filters it contains, and the
 \subsection{LSTM networks}
 
 \section{Data preprocessing}
+We perform the minimal necessary preprocessing to the data. The MIT-BIH Arrhythmia Database \cite{Moody}, found on PhysioNet \cite{physionet}, consists of 48 two-channel ambulatory ECG recordings from patients, each a little over 30 minutes long, and digitized at 360 Hz per channel with 11-bit resolution over a 10 mV range.
+
+For our purposes, the most general purpose algorithm would be able to process and classify the heartbeats in the original format they were recorded in (as 48 separate sequences). While this is ideal, we want to avoid enforcing dependencies between the labels of sequential heartbeats. Since all of the 48 sequences contain largely the same class of heartbeat (either a majority of normal heartbeats, or a majority of abnormal heartbeats), enforcing a heartbeat-to-heartbeat independence would be impossible if the networks were trained on the original (non-randomized) sequences. We could also have trained the networks on randomized versions of the sequences, where each heartbeat of a training sequence is sampled uniformly from all heartbeats across all of the original sequences, but that introduces another set of problems, such as the need to normalize all heartbeats to have the same baseline. Thus, we decided to train our networks on each individual heartbeat.
+
+To define and extract a single heartbeat from a continuous ECG sequence, we decided to extract a series of samples centered around the R peak of the heartbeat, since that would likely contain all relevant features. Since each heartbeat is annotated at its R peak, the only parameter we needed to decide on was the size of the window that we would extract. We determined empirically that the average distance between two R peaks was approximately 0.75 seconds, and so we decided on a window size of 1.0 seconds to allow for a margin of error. Thus, given our dataset's constraints, we performed the minimal preprocessing.
+
+A window size of 1 second led to nearly all examples containing 361 samples. 176 examples contained 360 samples, and to simplify their processing in the  networks, we simply duplicated the last sample to allow a uniform sample size for each heartbeat. Exactly 100 annotated heartbeats could not be used as examples because their R peaks are too close (within 0.5 seconds) to either the beginning of their respective sequence or the end.
+
+Starting with 110631 examples, we removed the 100 examples that did not contain the full 361 samples. We also removed the examples for which the annotation was neither 'normal' or some type of arrhythmia. Examples include paced heartbeats, ventricular flutter waves, unclassifiable heartbeats, and heartbeats that are a fusion of normal and paced or normal and ventricular. After removing these irrelevant examples, we had a set of 93521 examples, of which 18489 (19.7\%) are abnormal.
+
 
 \section{Results}
 
@@ -143,37 +153,13 @@ Soma             &Cell body (contains cell nucleus) \\
 \end{center}
 \end{table}
 
+\begin{thebibliography}{9}
+\bibitem{Moody} 
+Moody GB, Mark RG. The impact of the MIT-BIH Arrhythmia Database. \textit{IEEE Eng in Med and Biol} 20(3):45-50 (May-June 2001). (PMID: 11446209)
+ 
+\bibitem{physionet} 
+Goldberger AL, Amaral LAN, Glass L, Hausdorff JM, Ivanov PCh, Mark RG, Mietus JE, Moody GB, Peng C-K, Stanley HE. PhysioBank, PhysioToolkit, and PhysioNet: Components of a New Research Resource for Complex Physiologic Signals. \textit{Circulation} 101(23):e215-e220 [Circulation Electronic Pages; \url{http://circ.ahajournals.org/cgi/content/full/101/23/e215}]; 2000 (June 13).
 
-
-\subsubsection*{Acknowledgments}
-
-Use unnumbered third level headings for the acknowledgments. All
-acknowledgments go at the end of the paper. Do not include 
-acknowledgments in the anonymized submission, only in the 
-final paper. 
-
-\subsubsection*{References}
-
-References follow the acknowledgments. Use unnumbered third level heading for
-the references. Any choice of citation style is acceptable as long as you are
-consistent. It is permissible to reduce the font size to `small' (9-point) 
-when listing the references. {\bf Remember that this year you can use
-a ninth page as long as it contains \emph{only} cited references.}
-
-\small{
-[1] Alexander, J.A. \& Mozer, M.C. (1995) Template-based algorithms
-for connectionist rule extraction. In G. Tesauro, D. S. Touretzky
-and T.K. Leen (eds.), {\it Advances in Neural Information Processing
-Systems 7}, pp. 609-616. Cambridge, MA: MIT Press.
-
-[2] Bower, J.M. \& Beeman, D. (1995) {\it The Book of GENESIS: Exploring
-Realistic Neural Models with the GEneral NEural SImulation System.}
-New York: TELOS/Springer-Verlag.
-
-[3] Hasselmo, M.E., Schnell, E. \& Barkai, E. (1995) Dynamics of learning
-and recall at excitatory recurrent synapses and cholinergic modulation
-in rat hippocampal region CA3. {\it Journal of Neuroscience}
-{\bf 15}(7):5249-5262.
-}
+\end{thebibliography}
 
 \end{document}

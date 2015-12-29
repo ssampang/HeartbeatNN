@@ -1,4 +1,5 @@
 *.pkl
+*.swp
 *.pyc
 preprocessing/waveforms/*
 preprocessing/annotations/*
