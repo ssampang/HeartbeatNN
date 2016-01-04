@@ -71,9 +71,9 @@ class HBNet:
 			print 'Cross validation fold ' + str(i+1)
 			X_val, y_val = self.training_sets[i]
 			X_train = [ self.training_sets[j][0] for j in range( len(self.training_sets) ) if j!=i]
-			X_train = reduce(lambda x,y: np.concatenate( (x,y) ) , X_train)
+			X_train = reduce(lambda x,y: np.concatenate( (x,y) ) , X_train, [])
 			y_train = [ self.training_sets[j][1] for j in range( len(self.training_sets) ) if j!=i]
-			y_train = reduce(lambda x,y: np.concatenate( (x,y) ) , y_train)
+			y_train = reduce(lambda x,y: np.concatenate( (x,y) ) , y_train, [])
 			
 			self.learning_rate.set_value( self.original_learning_rate )
 			lasagne.layers.set_all_param_values(self.output_layer, self.original_weights)
@@ -92,7 +92,7 @@ class HBNet:
 					train_err = 0
 					train_batches = 0
 					start_time = time.time()
-					for batch in self.iterate_minibatches(X_train,y_train,self.batch_size, True):
+					for batch in self.iterate_minibatches(X_train,y_train,min(self.batch_size,len(X_train)), True):
 						inputs,targets = batch
 						train_err += self.train_fn(inputs,targets)
 						train_batches += 1
