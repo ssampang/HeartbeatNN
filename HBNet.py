@@ -92,7 +92,7 @@ class HBNet:
 					train_err = 0
 					train_batches = 0
 					start_time = time.time()
-					for batch in self.iterate_minibatches(X_train,y_train,self.batch_size):
+					for batch in self.iterate_minibatches(X_train,y_train,self.batch_size, True):
 						inputs,targets = batch
 						train_err += self.train_fn(inputs,targets)
 						train_batches += 1
@@ -107,7 +107,7 @@ class HBNet:
 						val_acc += acc
 						val_batches += 1
 					
-					if epoch % 1 == 0:
+					if epoch % 50 == 0 or epoch < 40:
 						print("Epoch {} of {} took {:.3f}s training loss: {:.6f}\t validation loss: {:.6f}\t validation accuracy:{:.2f} %".format(epoch + 1, num_epochs, time.time() - start_time, train_err / train_batches, val_err / val_batches, val_acc / val_batches * 100))
 					stats[i].append( (time.time() - training_start_time, train_err / train_batches, val_err / val_batches, val_acc / val_batches))
 					if val_acc > best_val_acc:
