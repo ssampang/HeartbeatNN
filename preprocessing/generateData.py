@@ -20,7 +20,7 @@ def textToData():
  	data = []
 	for record in records:
 		if not os.path.exists('annotations/'+str(record)+'.txt'):
-			os.system('/home/sid/Projects/HeartbeatNN/wfdb-10.5.24/build/bin/rdann -r mitdb/'+str(record)+' -f 0 -t 1805.556 -a atr -x >annotations/'+str(record)+'.txt')
+			os.system('rdann -r mitdb/'+str(record)+' -f 0 -t 1805.556 -a atr -x >annotations/'+str(record)+'.txt')
 		
 		f = file('annotations/'+str(record)+'.txt')
 		text = f.read().split('\n')
@@ -28,7 +28,7 @@ def textToData():
 		annotations = [ [float(x[0]),x[3]] for x in annotations]
 
 		if not os.path.exists('waveforms/'+str(record)+'.csv'):
-			os.system('/home/sid/Projects/HeartbeatNN/wfdb-10.5.24/build/bin/rdsamp -r mitdb/'+str(record)+' -c -H -f 0 -t 1805.556 -v -p >waveforms/'+str(record)+'.csv')
+			os.system('rdsamp -r mitdb/'+str(record)+' -c -H -f 0 -t 1805.556 -v -p >waveforms/'+str(record)+'.csv')
 		
 		f.close()
 		f = file('waveforms/'+str(record)+'.csv')
@@ -75,9 +75,9 @@ f = file('intermediateData.pkl')
 intermediateData = cPickle.load(f)
 f.close()
 
-generateHist(intermediateData)
+#generateHist(intermediateData)
 
-#data = dataToSamples(intermediateData,1.0)
-#savefile = open('data.pkl','wb')
-#cPickle.dump(data,savefile)
-#savefile.close()
+data = dataToSamples(intermediateData,1.0)
+savefile = open('data.pkl','wb')
+cPickle.dump(data,savefile)
+savefile.close()

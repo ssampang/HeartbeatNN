@@ -48,9 +48,6 @@ X_train, y_train = loadData(trainingFileName)
 X_test, y_test = loadData(testFileName)
 print('Done loading data')
 
-X_train = np.swapaxes(X_train,2,3)
-X_test = np.swapaxes(X_test,2,3)
-
 training_sets = []
 num_examples = len( X_train )
 indices = [ num_examples*i/4 for i in range(cross_val_fold_size)]
@@ -63,7 +60,7 @@ for i in range( len(indices) ):
 for i in range(11):
 	reg_lambda = 0.001*i
 	input_var = T.tensor4('inputs')
-	network, output_layer, reg_layers = build_lstm( input_var)
+	network, output_layer, reg_layers = build_cnn( input_var )
 
-	net = HBNet( 'LSTM', network, output_layer, input_var, reg_layers, learning_rate, lr_decay, momentum, reg_lambda, training_sets)
+	net = HBNet( 'CNN', network, output_layer, input_var, reg_layers, learning_rate, lr_decay, momentum, reg_lambda, training_sets)
 	net.train(num_epochs, True) 
