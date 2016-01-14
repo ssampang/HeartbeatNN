@@ -3,7 +3,7 @@ import random
 import numpy as np
 from math import floor
 
-f = open('../data.pkl')
+f = open('data.pkl')
 data = cPickle.load(f)
 f.close()
 beatsMissing1Sample = filter(lambda x: len(x[0])==360, data)
@@ -38,9 +38,7 @@ X_test = np.expand_dims(X_test,1)
 y_test = np.array(y_test,dtype='int32')
 y_test = np.expand_dims(y_test,1)
 
-train_length = len(abnormals) - test_length
-normals = normals[:train_length]
-abnormals = abnormals[:train_length]
+normals = normals[:len(abnormals)]
 training = normals
 training.extend(abnormals)
 
@@ -48,6 +46,9 @@ X_train = np.array([ np.array([y[1:] for y in x[0]]).T for x in training], dtype
 X_train = np.expand_dims(X_train,1)
 y_train = np.array([ int(x[1][1]=='N') for x in training], dtype='int32')
 y_train = np.expand_dims(y_train,1)
+
+X_train = np.swapaxes(X_train,2,3)
+X_test = np.swapaxes(X_test,2,3)
 
 f = open('BinaryTrain80.pkl', 'wb')
 cPickle.dump((X_train,y_train),f)
